@@ -4,8 +4,6 @@ date: {{ .Date }}
 draft: false
 author: zgl
 
-tags: ["hello"]
-
 math: false
 comments: false
 ---
