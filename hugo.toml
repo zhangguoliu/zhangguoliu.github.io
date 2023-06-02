@@ -22,9 +22,9 @@ title = "zgl's blog"
   # twitter = 'nanxiaobei'
   github = 'zhangguoliu'
   # instagram = 'nan.xiaobei'
-  rss = true
+  # rss = true
 
-  avatar = 'guoliuzhang315@gmail.com'
+  avatar = 'https://github.com/zhangguoliu/zhangguoliu.github.io/blob/main/img/avatar.png?raw=true'
   name = 'zgl'
   bio = '临渊羡鱼，不如退而结网'
 # ------------------------------
