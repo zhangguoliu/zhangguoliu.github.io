@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<html
+  class="not-ready text-sm lg:text-base"
+  style="--bg: #faf6f1"
+  lang="zh-CN"
+>
+  <head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, shrink-to-fit=no"
+  />
+
+  
+  <title>Java 并发编程实战 第二章 线程安全性 - zgl&#39;s blog</title>
+
+  
+  <meta name="theme-color" />
+
+  
+  
+  
+  <meta name="description" content=" 在编写并发代码时，应该始终遵循的原则 首先使代码正确运行，然后再提高代码的速度 这是因为并发错误是非常难以重现和调试的 什么是线程安全性 当多个线程访问某个类时，这个类始终都能表现出正确的行为，那么就称这个类是线程安全的 在线程安全性的定义中，最核心的概念就是正确性 正确性的含义是，某个类的行为与其规范完全一致 在良好的规范中，通常会定义各种不变性条件（Invariant）来约束对象的状态，以及定义各种后验条件（Postcondition）来描述对象操作的结果 在线程安全类中封装了必要的同步机制，因此客户端无须进一步采取同步措施 无状态对象一定是线程安全的 原子性 非原子操作：包含 读取-修改-写入 三个操作 在并发编程中，这种由于不恰当的执行时序而出现不正确的结果是一种非常重要的情况，它有一个正式的名字：竞态条件（Race Condition） 竞态条件 当某个计算的正确性取决于多个线程的交替执行时序时，就会发生竞态条件
+现实情况中的竞态条件 最常见的竞态条件类型：先检查后执行（Check-Then-Act）
+本质：通过一个可能失效的观测结果来决定下一步的动作 补充理解：观测结果失效的时间一般为观测结束到执行下一步动作之间的空隙 读取-修改-写入 是另一种竞态条件
+要递增一个计数器，必须知道它之前的值，并确保在执行更新的过程中，没有其他线程会修改或使用这个值 延迟初始化中的竞态条件：类似单例模式中的懒汉式
+复合操作 复合操作必须是原子的 递增运算：读取-修改-写入 延迟初始化：先检查后执行 原子变量类 在 java.util.concurrent.atomic 包下 count 是 final 修饰的 需要在构造方法中进行初始化 变更操作前需要先复制它的一份拷贝 加锁机制 不变性条件 当在不变性条件中涉及多个变量时，各个变量之间并不是彼此独立的，而是某个变量的值会对其他变量的值产生约束 上例中的不变性条件是：在 lastFactors 中缓存的因数之积应该等于在 lastNumber 中缓存的数值 内置锁 支持原子性的内置锁机制：同步代码块 每个 Java 对象都可以用做一个实现同步的锁，称为内置锁或监视器锁 静态方法则是 Class 对象 重入 内置锁是可重入的 “重入” 意味着获取锁的操作的粒度是“线程”，而不是“调用” 重入的一种实现方法：为每个锁关联一个所有者线程和一个获取计数值 用锁来保护状态 如果用同步来协调对某个变量的访问，那么在访问这个变量的所有位置上都需要使用同步 而且，当使用锁来协调对某个变量的访问时，在访问变量的所有位置上都要使用同一个锁 对于每个包含多个变量的不变性条件，其中涉及的所有变量都需要由同一个锁来保护 活跃性与性能 不良并发应用程序：可同时调用的数量，不仅受到可用处理资源的限制，还受到应用程序本身结构的限制 通过缩小同步代码块的作用范围，兼顾并发性和线程安全性 同步代码块不能过小，即不能破坏原子操作 应该尽量将不影响共享状态且执行时间较长的操作从同步代码块中分离出去 当执行时间较长的计算或者可能无法快速完成的操作时（例如，网络 I/O 或控制台 I/O），一定不要持有锁 " />
+  <meta name="author" content="zgl" />
+  
+
+  
+  
+  
+  
+  
+  
+  <link rel="preload stylesheet" as="style" href="https:zhagguoliu.github.io/main.min.css" />
+
+  
+  <script
+    defer
+    src="https:zhagguoliu.github.io"
+    onload="hljs.initHighlightingOnLoad();"
+  ></script>
+  
+
+  
+   
+  <link rel="preload" as="image" href="https:zhagguoliu.github.io" />
+
+  
+  
+  
+  <link rel="preload" as="image" href="https://github.com/zhangguoliu/zhangguoliu.github.io/blob/main/static/avatar.png?raw=true" />
+  
+  
+
+  
+  <link rel="preload" as="image" href="https:zhagguoliu.github.io" />
+  
+  
+
+  
+  
+
+  
+  <link rel="icon" href="https:zhagguoliu.github.io" />
+  <link rel="apple-touch-icon" href="https:zhagguoliu.github.io" />
+
+  
+  <meta name="generator" content="Hugo 0.112.5">
+
+  
+  
+
+  
+  
+  
+  
+  
+  
+  
+  <meta property="og:title" content="Java 并发编程实战 第二章 线程安全性" />
+<meta property="og:description" content=" 在编写并发代码时，应该始终遵循的原则 首先使代码正确运行，然后再提高代码的速度 这是因为并发错误是非常难以重现和调试的 什么是线程安全性 当多个线程访问某个类时，这个类始终都能表现出正确的行为，那么就称这个类是线程安全的 在线程安全性的定义中，最核心的概念就是正确性 正确性的含义是，某个类的行为与其规范完全一致 在良好的规范中，通常会定义各种不变性条件（Invariant）来约束对象的状态，以及定义各种后验条件（Postcondition）来描述对象操作的结果 在线程安全类中封装了必要的同步机制，因此客户端无须进一步采取同步措施 无状态对象一定是线程安全的 原子性 非原子操作：包含 读取-修改-写入 三个操作 在并发编程中，这种由于不恰当的执行时序而出现不正确的结果是一种非常重要的情况，它有一个正式的名字：竞态条件（Race Condition） 竞态条件 当某个计算的正确性取决于多个线程的交替执行时序时，就会发生竞态条件
+现实情况中的竞态条件 最常见的竞态条件类型：先检查后执行（Check-Then-Act）
+本质：通过一个可能失效的观测结果来决定下一步的动作 补充理解：观测结果失效的时间一般为观测结束到执行下一步动作之间的空隙 读取-修改-写入 是另一种竞态条件
+要递增一个计数器，必须知道它之前的值，并确保在执行更新的过程中，没有其他线程会修改或使用这个值 延迟初始化中的竞态条件：类似单例模式中的懒汉式
+复合操作 复合操作必须是原子的 递增运算：读取-修改-写入 延迟初始化：先检查后执行 原子变量类 在 java.util.concurrent.atomic 包下 count 是 final 修饰的 需要在构造方法中进行初始化 变更操作前需要先复制它的一份拷贝 加锁机制 不变性条件 当在不变性条件中涉及多个变量时，各个变量之间并不是彼此独立的，而是某个变量的值会对其他变量的值产生约束 上例中的不变性条件是：在 lastFactors 中缓存的因数之积应该等于在 lastNumber 中缓存的数值 内置锁 支持原子性的内置锁机制：同步代码块 每个 Java 对象都可以用做一个实现同步的锁，称为内置锁或监视器锁 静态方法则是 Class 对象 重入 内置锁是可重入的 “重入” 意味着获取锁的操作的粒度是“线程”，而不是“调用” 重入的一种实现方法：为每个锁关联一个所有者线程和一个获取计数值 用锁来保护状态 如果用同步来协调对某个变量的访问，那么在访问这个变量的所有位置上都需要使用同步 而且，当使用锁来协调对某个变量的访问时，在访问变量的所有位置上都要使用同一个锁 对于每个包含多个变量的不变性条件，其中涉及的所有变量都需要由同一个锁来保护 活跃性与性能 不良并发应用程序：可同时调用的数量，不仅受到可用处理资源的限制，还受到应用程序本身结构的限制 通过缩小同步代码块的作用范围，兼顾并发性和线程安全性 同步代码块不能过小，即不能破坏原子操作 应该尽量将不影响共享状态且执行时间较长的操作从同步代码块中分离出去 当执行时间较长的计算或者可能无法快速完成的操作时（例如，网络 I/O 或控制台 I/O），一定不要持有锁 " />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https:zhagguoliu.github.io/post/java-%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E5%AE%9E%E6%88%98-%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E6%80%A7/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2023-10-05T20:43:45+08:00" />
+<meta property="article:modified_time" content="2023-10-05T20:43:45+08:00" />
+
+  
+  <meta itemprop="name" content="Java 并发编程实战 第二章 线程安全性">
+<meta itemprop="description" content=" 在编写并发代码时，应该始终遵循的原则 首先使代码正确运行，然后再提高代码的速度 这是因为并发错误是非常难以重现和调试的 什么是线程安全性 当多个线程访问某个类时，这个类始终都能表现出正确的行为，那么就称这个类是线程安全的 在线程安全性的定义中，最核心的概念就是正确性 正确性的含义是，某个类的行为与其规范完全一致 在良好的规范中，通常会定义各种不变性条件（Invariant）来约束对象的状态，以及定义各种后验条件（Postcondition）来描述对象操作的结果 在线程安全类中封装了必要的同步机制，因此客户端无须进一步采取同步措施 无状态对象一定是线程安全的 原子性 非原子操作：包含 读取-修改-写入 三个操作 在并发编程中，这种由于不恰当的执行时序而出现不正确的结果是一种非常重要的情况，它有一个正式的名字：竞态条件（Race Condition） 竞态条件 当某个计算的正确性取决于多个线程的交替执行时序时，就会发生竞态条件
+现实情况中的竞态条件 最常见的竞态条件类型：先检查后执行（Check-Then-Act）
+本质：通过一个可能失效的观测结果来决定下一步的动作 补充理解：观测结果失效的时间一般为观测结束到执行下一步动作之间的空隙 读取-修改-写入 是另一种竞态条件
+要递增一个计数器，必须知道它之前的值，并确保在执行更新的过程中，没有其他线程会修改或使用这个值 延迟初始化中的竞态条件：类似单例模式中的懒汉式
+复合操作 复合操作必须是原子的 递增运算：读取-修改-写入 延迟初始化：先检查后执行 原子变量类 在 java.util.concurrent.atomic 包下 count 是 final 修饰的 需要在构造方法中进行初始化 变更操作前需要先复制它的一份拷贝 加锁机制 不变性条件 当在不变性条件中涉及多个变量时，各个变量之间并不是彼此独立的，而是某个变量的值会对其他变量的值产生约束 上例中的不变性条件是：在 lastFactors 中缓存的因数之积应该等于在 lastNumber 中缓存的数值 内置锁 支持原子性的内置锁机制：同步代码块 每个 Java 对象都可以用做一个实现同步的锁，称为内置锁或监视器锁 静态方法则是 Class 对象 重入 内置锁是可重入的 “重入” 意味着获取锁的操作的粒度是“线程”，而不是“调用” 重入的一种实现方法：为每个锁关联一个所有者线程和一个获取计数值 用锁来保护状态 如果用同步来协调对某个变量的访问，那么在访问这个变量的所有位置上都需要使用同步 而且，当使用锁来协调对某个变量的访问时，在访问变量的所有位置上都要使用同一个锁 对于每个包含多个变量的不变性条件，其中涉及的所有变量都需要由同一个锁来保护 活跃性与性能 不良并发应用程序：可同时调用的数量，不仅受到可用处理资源的限制，还受到应用程序本身结构的限制 通过缩小同步代码块的作用范围，兼顾并发性和线程安全性 同步代码块不能过小，即不能破坏原子操作 应该尽量将不影响共享状态且执行时间较长的操作从同步代码块中分离出去 当执行时间较长的计算或者可能无法快速完成的操作时（例如，网络 I/O 或控制台 I/O），一定不要持有锁 "><meta itemprop="datePublished" content="2023-10-05T20:43:45+08:00" />
+<meta itemprop="dateModified" content="2023-10-05T20:43:45+08:00" />
+<meta itemprop="wordCount" content="74">
+<meta itemprop="keywords" content="" />
+  
+  <meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Java 并发编程实战 第二章 线程安全性"/>
+<meta name="twitter:description" content=" 在编写并发代码时，应该始终遵循的原则 首先使代码正确运行，然后再提高代码的速度 这是因为并发错误是非常难以重现和调试的 什么是线程安全性 当多个线程访问某个类时，这个类始终都能表现出正确的行为，那么就称这个类是线程安全的 在线程安全性的定义中，最核心的概念就是正确性 正确性的含义是，某个类的行为与其规范完全一致 在良好的规范中，通常会定义各种不变性条件（Invariant）来约束对象的状态，以及定义各种后验条件（Postcondition）来描述对象操作的结果 在线程安全类中封装了必要的同步机制，因此客户端无须进一步采取同步措施 无状态对象一定是线程安全的 原子性 非原子操作：包含 读取-修改-写入 三个操作 在并发编程中，这种由于不恰当的执行时序而出现不正确的结果是一种非常重要的情况，它有一个正式的名字：竞态条件（Race Condition） 竞态条件 当某个计算的正确性取决于多个线程的交替执行时序时，就会发生竞态条件
+现实情况中的竞态条件 最常见的竞态条件类型：先检查后执行（Check-Then-Act）
+本质：通过一个可能失效的观测结果来决定下一步的动作 补充理解：观测结果失效的时间一般为观测结束到执行下一步动作之间的空隙 读取-修改-写入 是另一种竞态条件
+要递增一个计数器，必须知道它之前的值，并确保在执行更新的过程中，没有其他线程会修改或使用这个值 延迟初始化中的竞态条件：类似单例模式中的懒汉式
+复合操作 复合操作必须是原子的 递增运算：读取-修改-写入 延迟初始化：先检查后执行 原子变量类 在 java.util.concurrent.atomic 包下 count 是 final 修饰的 需要在构造方法中进行初始化 变更操作前需要先复制它的一份拷贝 加锁机制 不变性条件 当在不变性条件中涉及多个变量时，各个变量之间并不是彼此独立的，而是某个变量的值会对其他变量的值产生约束 上例中的不变性条件是：在 lastFactors 中缓存的因数之积应该等于在 lastNumber 中缓存的数值 内置锁 支持原子性的内置锁机制：同步代码块 每个 Java 对象都可以用做一个实现同步的锁，称为内置锁或监视器锁 静态方法则是 Class 对象 重入 内置锁是可重入的 “重入” 意味着获取锁的操作的粒度是“线程”，而不是“调用” 重入的一种实现方法：为每个锁关联一个所有者线程和一个获取计数值 用锁来保护状态 如果用同步来协调对某个变量的访问，那么在访问这个变量的所有位置上都需要使用同步 而且，当使用锁来协调对某个变量的访问时，在访问变量的所有位置上都要使用同一个锁 对于每个包含多个变量的不变性条件，其中涉及的所有变量都需要由同一个锁来保护 活跃性与性能 不良并发应用程序：可同时调用的数量，不仅受到可用处理资源的限制，还受到应用程序本身结构的限制 通过缩小同步代码块的作用范围，兼顾并发性和线程安全性 同步代码块不能过小，即不能破坏原子操作 应该尽量将不影响共享状态且执行时间较长的操作从同步代码块中分离出去 当执行时间较长的计算或者可能无法快速完成的操作时（例如，网络 I/O 或控制台 I/O），一定不要持有锁 "/>
+
+  
+  
+</head>
+
+  <body class="text-black duration-200 ease-out dark:text-white">
+    <header class="mx-auto flex h-[5rem] max-w-3xl px-8 lg:justify-center">
+  <div class="relative z-50 mr-auto flex items-center">
+    <a
+      class="-translate-x-[1px] -translate-y-0.5 text-3xl font-bold"
+      href="https:zhagguoliu.github.io"
+      >zgl&#39;s blog</a
+    >
+    <div
+      class="btn-dark text-[0] ml-6 h-6 w-6 shrink-0 cursor-pointer [background:url(./theme.png)_left_center/_auto_theme('spacing.6')_no-repeat] [transition:_background-position_0.4s_steps(5)] dark:[background-position:right]"
+      role="button"
+      aria-label="Dark"
+    ></div>
+  </div>
+
+  <div
+    class="btn-menu relative z-50 -mr-8 flex h-[5rem] w-[5rem] shrink-0 cursor-pointer flex-col items-center justify-center gap-2.5 lg:hidden"
+    role="button"
+    aria-label="Menu"
+  ></div>
+
+  
+  <script>
+    
+    const htmlClass = document.documentElement.classList;
+    setTimeout(() => {
+      htmlClass.remove('not-ready');
+    }, 10);
+
+    
+    const btnMenu = document.querySelector('.btn-menu');
+    btnMenu.addEventListener('click', () => {
+      htmlClass.toggle('open');
+    });
+
+    
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    const lightBg = `"#faf6f1"`.replace(/"/g, '');
+    const setDark = (isDark) => {
+      metaTheme.setAttribute('content', isDark ? '#000' : lightBg);
+      htmlClass[isDark ? 'add' : 'remove']('dark');
+      localStorage.setItem('dark', isDark);
+    };
+
+    
+    const darkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+    if (htmlClass.contains('dark')) {
+      setDark(true);
+    } else {
+      const darkVal = localStorage.getItem('dark');
+      setDark(darkVal ? darkVal === 'true' : darkScheme.matches);
+    }
+
+    
+    darkScheme.addEventListener('change', (event) => {
+      setDark(event.matches);
+    });
+
+    
+    const btnDark = document.querySelector('.btn-dark');
+    btnDark.addEventListener('click', () => {
+      setDark(localStorage.getItem('dark') !== 'true');
+    });
+  </script>
+
+  <div
+    class="nav-wrapper fixed inset-x-0 top-full z-40 flex h-full select-none flex-col justify-center pb-16 duration-200 dark:bg-black lg:static lg:h-auto lg:flex-row lg:!bg-transparent lg:pb-0 lg:transition-none"
+  >
+    
+    
+    <nav class="lg:ml-12 lg:flex lg:flex-row lg:items-center lg:space-x-6">
+      
+      <a
+        class="block text-center text-2xl leading-[5rem] lg:text-base lg:font-normal"
+        href="/about/"
+        >About</a
+      >
+      
+    </nav>
+    
+
+    
+    <nav
+      class="mt-12 flex justify-center space-x-10 dark:invert lg:ml-12 lg:mt-0 lg:items-center lg:space-x-6"
+    >
+      
+      <a
+        class="h-8 w-8 text-[0] [background:var(--url)_center_center/cover_no-repeat] lg:h-6 lg:w-6"
+        style="--url: url(./github.svg)"
+        href="https://github.com/zhangguoliu"
+        target="_blank"
+        rel="me"
+      >
+        github
+      </a>
+      
+    </nav>
+    
+  </div>
+</header>
+
+
+    <main
+      class="prose prose-neutral relative mx-auto min-h-[calc(100%-10rem)] max-w-3xl px-8 pb-24 pt-16 dark:prose-invert"
+    >
+      
+
+<article>
+  <header class="mb-20">
+    <h1 class="!my-0 pb-2.5">Java 并发编程实战 第二章 线程安全性</h1>
+
+    
+    <div class="text-sm opacity-60">
+      
+      <time>Oct 5, 2023</time>
+      
+      
+      
+      
+      <span class="mx-1">&middot;</span>
+      <span>zgl</span>
+      
+    </div>
+    
+  </header>
+
+  <section><ul>
+<li>在编写并发代码时，应该始终遵循的<strong>原则</strong>
+<ul>
+<li><strong>首先使代码正确运行，然后再提高代码的速度</strong></li>
+<li>这是因为<strong>并发错误是非常难以重现和调试的</strong></li>
+</ul>
+</li>
+</ul>
+<h2 id="什么是线程安全性">什么是线程安全性</h2>
+<ul>
+<li>当多个线程访问某个类时，这个类始终都能表现出<strong>正确的行为</strong>，那么就称这个类是线程安全的</li>
+<li>在线程安全性的定义中，最核心的概念就是<strong>正确性</strong>
+<ul>
+<li>正确性的含义是，某个类的行为与<strong>其规范</strong>完全一致</li>
+<li>在良好的规范中，通常会定义各种<strong>不变性条件</strong>（<strong>Invariant</strong>）来约束对象的状态，以及定义各种<strong>后验条件</strong>（<strong>Postcondition</strong>）来描述对象操作的结果</li>
+</ul>
+</li>
+<li>在线程安全类中封装了必要的同步机制，因此客户端无须进一步采取同步措施</li>
+</ul>
+<h3 id="无状态对象一定是线程安全的">无状态对象一定是线程安全的</h3>
+<p><img src="https://gitee.com/zhangguoliu/PicGo/raw/master/202310021917106.png" alt="程序清单 2-1"></p>
+<h2 id="原子性">原子性</h2>
+<p><img src="https://gitee.com/zhangguoliu/PicGo/raw/master/202310021924000.png" alt="程序清单 2-2"></p>
+<ul>
+<li>非原子操作：包含 <strong>读取-修改-写入</strong> 三个操作</li>
+<li>在并发编程中，这种由于<strong>不恰当的执行时序</strong>而出现不正确的结果是一种非常重要的情况，它有一个正式的名字：<strong>竞态条件</strong>（<strong>Race Condition</strong>）</li>
+</ul>
+<h3 id="竞态条件">竞态条件</h3>
+<ul>
+<li>
+<p>当某个计算的<strong>正确性</strong>取决于<strong>多个线程的交替执行时序</strong>时，就会发生竞态条件</p>
+</li>
+<li>
+<p>现实情况中的竞态条件
+<img src="https://gitee.com/zhangguoliu/PicGo/raw/master/202310040045893.png" alt="星巴克案例"></p>
+</li>
+<li>
+<p>最常见的竞态条件类型：<strong>先检查后执行（Check-Then-Act）</strong></p>
+<ul>
+<li>本质：通过一个<strong>可能失效</strong>的观测结果来决定下一步的动作</li>
+<li>补充理解：观测结果失效的时间一般为观测结束到执行下一步动作之间的空隙</li>
+</ul>
+</li>
+<li>
+<p><strong>读取-修改-写入</strong> 是另一种竞态条件</p>
+<ul>
+<li>要递增一个计数器，必须知道它之前的值，并确保在执行更新的过程中，没有其他线程会修改或使用这个值</li>
+</ul>
+</li>
+<li>
+<p><strong>延迟初始化</strong>中的竞态条件：类似单例模式中的<strong>懒汉式</strong></p>
+</li>
+</ul>
+<p><img src="https://gitee.com/zhangguoliu/PicGo/raw/master/202310021944507.png" alt="程序清单 2-3"></p>
+<h3 id="复合操作">复合操作</h3>
+<ul>
+<li>复合操作必须是原子的
+<ul>
+<li>递增运算：读取-修改-写入</li>
+<li>延迟初始化：先检查后执行</li>
+</ul>
+</li>
+</ul>
+<h3 id="原子变量类">原子变量类</h3>
+<ul>
+<li>在 <code>java.util.concurrent.atomic</code> 包下</li>
+</ul>
+<p><img src="https://gitee.com/zhangguoliu/PicGo/raw/master/202310022001741.png" alt="程序清单 2-4"></p>
+<ul>
+<li>count 是 final 修饰的
+<ul>
+<li>需要在构造方法中进行初始化</li>
+<li>变更操作前需要先复制它的一份拷贝</li>
+</ul>
+</li>
+</ul>
+<h2 id="加锁机制">加锁机制</h2>
+<h3 id="不变性条件">不变性条件</h3>
+<p><img src="https://gitee.com/zhangguoliu/PicGo/raw/master/202310022017142.png" alt="程序清单 2-5"></p>
+<ul>
+<li>当在不变性条件中涉及<strong>多个</strong>变量时，各个变量之间<strong>并不是</strong>彼此独立的，而是<strong>某个变量的值会对其他变量的值产生约束</strong></li>
+<li>上例中的不变性条件是：在 lastFactors 中缓存的因数之积应该等于在 lastNumber 中缓存的数值</li>
+</ul>
+<h3 id="内置锁">内置锁</h3>
+<ul>
+<li>支持原子性的内置锁机制：<strong>同步代码块</strong></li>
+<li><strong>每个</strong> Java 对象都可以用做一个实现同步的锁，称为<strong>内置锁</strong>或<strong>监视器锁</strong>
+<ul>
+<li>静态方法则是 <strong>Class 对象</strong></li>
+</ul>
+</li>
+</ul>
+<p><img src="https://gitee.com/zhangguoliu/PicGo/raw/master/202310022036282.png" alt="程序清单 2-6-1">
+<img src="https://gitee.com/zhangguoliu/PicGo/raw/master/202310022037253.png" alt="程序清单 2-6-2"></p>
+<h3 id="重入">重入</h3>
+<ul>
+<li>内置锁是可重入的</li>
+<li>“重入” 意味着<strong>获取锁的操作的粒度是“线程”</strong>，而不是“调用”</li>
+<li>重入的一种实现方法：为<strong>每个锁</strong>关联一个<strong>所有者线程</strong>和一个<strong>获取计数值</strong></li>
+</ul>
+<p><img src="https://gitee.com/zhangguoliu/PicGo/raw/master/202310022046484.png" alt="程序清单 2-7"></p>
+<p><img src="https://gitee.com/zhangguoliu/PicGo/raw/master/202310051850084.png" alt="程序清单 2-7 解释"></p>
+<h3 id="用锁来保护状态">用锁来保护状态</h3>
+<ul>
+<li>如果用同步来协调对某个变量的访问，那么在访问这个变量的<strong>所有</strong>位置上都需要使用同步</li>
+<li>而且，当使用锁来协调对某个变量的访问时，在访问变量的<strong>所有</strong>位置上都要使用<strong>同一个</strong>锁</li>
+<li>对于每个包含<strong>多个</strong>变量的<strong>不变性条件</strong>，其中涉及的<strong>所有</strong>变量都需要由<strong>同一个</strong>锁来保护</li>
+</ul>
+<p><img src="https://gitee.com/zhangguoliu/PicGo/raw/master/202310051920469.png" alt="只是将每个方法都作为同步方法就行了吗"></p>
+<h3 id="活跃性与性能">活跃性与性能</h3>
+<ul>
+<li>不良并发应用程序：可同时调用的数量，不仅受到可用处理资源的限制，还受到应用程序本身结构的限制</li>
+<li>通过<strong>缩小同步代码块的作用范围</strong>，兼顾并发性和线程安全性
+<ul>
+<li>同步代码块不能过小，即不能破坏原子操作</li>
+<li>应该尽量将<strong>不影响</strong>共享状态且执行时间<strong>较长</strong>的操作从同步代码块中<strong>分离</strong>出去</li>
+</ul>
+</li>
+<li>当执行时间较长的计算或者可能无法快速完成的操作时（例如，网络 I/O 或控制台 I/O），一定不要持有锁</li>
+</ul>
+<p><img src="https://gitee.com/zhangguoliu/PicGo/raw/master/202310022114270.png" alt="程序清单 2-8-1">
+<img src="https://gitee.com/zhangguoliu/PicGo/raw/master/202310022114734.png" alt="程序清单 2-8-2"></p>
+</section>
+
+  
+  
+
+  
+  
+  
+  <nav class="mt-24 flex rounded-lg bg-black/[3%] text-lg dark:bg-white/[8%]">
+    
+    
+    <a
+      class="ml-auto flex w-1/2 items-center justify-end rounded-r-md p-6 pl-3 no-underline hover:bg-black/[2%] dark:hover:bg-white/[3%]"
+      href="https:zhagguoliu.github.io/post/java-%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E5%AE%9E%E6%88%98-%E7%AC%AC%E4%B8%80%E7%AB%A0-%E7%AE%80%E4%BB%8B/"
+      ><span>Java 并发编程实战 第一章 简介</span><span class="ml-1.5">→</span></a
+    >
+    
+  </nav>
+  
+
+  
+  
+
+  
+  
+</article>
+
+
+    </main>
+
+    <footer
+  class="opaco mx-auto flex h-[5rem] max-w-3xl items-center px-8 text-[0.9em] opacity-60"
+>
+  <div class="mr-auto">
+    &copy; 2023
+    <a class="link" href="https:zhagguoliu.github.io">zgl&#39;s blog</a>
+  </div>
+  <a class="link mx-6" href="https://gohugo.io/" rel="noopener" target="_blank"
+    >Powered by Hugo️️</a
+  >️
+  <a
+    class="link"
+    href="https://github.com/nanxiaobei/hugo-paper"
+    rel="noopener"
+    target="_blank"
+    >Theme Paper</a
+  >
+</footer>
+
+  </body>
+</html>

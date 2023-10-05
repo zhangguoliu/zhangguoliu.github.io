@@ -2,35 +2,48 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>zgl&#39;s blog</title>
-    <link>https://zhangguoliu.github.io/</link>
+    <link>https:zhagguoliu.github.io/</link>
     <description>Recent content on zgl&#39;s blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-CN</language>
-    <lastBuildDate>Thu, 05 Oct 2023 20:09:26 +0800</lastBuildDate><atom:link href="https://zhangguoliu.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Thu, 05 Oct 2023 20:43:45 +0800</lastBuildDate><atom:link href="https:zhagguoliu.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Java 并发编程实战 第二章 线程安全性</title>
+      <link>https:zhagguoliu.github.io/post/java-%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E5%AE%9E%E6%88%98-%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E6%80%A7/</link>
+      <pubDate>Thu, 05 Oct 2023 20:43:45 +0800</pubDate>
+      
+      <guid>https:zhagguoliu.github.io/post/java-%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E5%AE%9E%E6%88%98-%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E6%80%A7/</guid>
+      <description> 在编写并发代码时，应该始终遵循的原则 首先使代码正确运行，然后再提高代码的速度 这是因为并发错误是非常难以重现和调试的 什么是线程安全性 当多个线程访问某个类时，这个类始终都能表现出正确的行为，那么就称这个类是线程安全的 在线程安全性的定义中，最核心的概念就是正确性 正确性的含义是，某个类的行为与其规范完全一致 在良好的规范中，通常会定义各种不变性条件（Invariant）来约束对象的状态，以及定义各种后验条件（Postcondition）来描述对象操作的结果 在线程安全类中封装了必要的同步机制，因此客户端无须进一步采取同步措施 无状态对象一定是线程安全的 原子性 非原子操作：包含 读取-修改-写入 三个操作 在并发编程中，这种由于不恰当的执行时序而出现不正确的结果是一种非常重要的情况，它有一个正式的名字：竞态条件（Race Condition） 竞态条件 当某个计算的正确性取决于多个线程的交替执行时序时，就会发生竞态条件
+现实情况中的竞态条件 最常见的竞态条件类型：先检查后执行（Check-Then-Act）
+本质：通过一个可能失效的观测结果来决定下一步的动作 补充理解：观测结果失效的时间一般为观测结束到执行下一步动作之间的空隙 读取-修改-写入 是另一种竞态条件
+要递增一个计数器，必须知道它之前的值，并确保在执行更新的过程中，没有其他线程会修改或使用这个值 延迟初始化中的竞态条件：类似单例模式中的懒汉式
+复合操作 复合操作必须是原子的 递增运算：读取-修改-写入 延迟初始化：先检查后执行 原子变量类 在 java.util.concurrent.atomic 包下 count 是 final 修饰的 需要在构造方法中进行初始化 变更操作前需要先复制它的一份拷贝 加锁机制 不变性条件 当在不变性条件中涉及多个变量时，各个变量之间并不是彼此独立的，而是某个变量的值会对其他变量的值产生约束 上例中的不变性条件是：在 lastFactors 中缓存的因数之积应该等于在 lastNumber 中缓存的数值 内置锁 支持原子性的内置锁机制：同步代码块 每个 Java 对象都可以用做一个实现同步的锁，称为内置锁或监视器锁 静态方法则是 Class 对象 重入 内置锁是可重入的 “重入” 意味着获取锁的操作的粒度是“线程”，而不是“调用” 重入的一种实现方法：为每个锁关联一个所有者线程和一个获取计数值 用锁来保护状态 如果用同步来协调对某个变量的访问，那么在访问这个变量的所有位置上都需要使用同步 而且，当使用锁来协调对某个变量的访问时，在访问变量的所有位置上都要使用同一个锁 对于每个包含多个变量的不变性条件，其中涉及的所有变量都需要由同一个锁来保护 活跃性与性能 不良并发应用程序：可同时调用的数量，不仅受到可用处理资源的限制，还受到应用程序本身结构的限制 通过缩小同步代码块的作用范围，兼顾并发性和线程安全性 同步代码块不能过小，即不能破坏原子操作 应该尽量将不影响共享状态且执行时间较长的操作从同步代码块中分离出去 当执行时间较长的计算或者可能无法快速完成的操作时（例如，网络 I/O 或控制台 I/O），一定不要持有锁 </description>
+    </item>
+    
     <item>
       <title>Java 并发编程实战 第一章 简介</title>
-      <link>https://zhangguoliu.github.io/post/java-%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E5%AE%9E%E6%88%98-%E7%AC%AC%E4%B8%80%E7%AB%A0-%E7%AE%80%E4%BB%8B/</link>
+      <link>https:zhagguoliu.github.io/post/java-%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E5%AE%9E%E6%88%98-%E7%AC%AC%E4%B8%80%E7%AB%A0-%E7%AE%80%E4%BB%8B/</link>
       <pubDate>Thu, 05 Oct 2023 20:09:26 +0800</pubDate>
       
-      <guid>https://zhangguoliu.github.io/post/java-%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E5%AE%9E%E6%88%98-%E7%AC%AC%E4%B8%80%E7%AB%A0-%E7%AE%80%E4%BB%8B/</guid>
+      <guid>https:zhagguoliu.github.io/post/java-%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E5%AE%9E%E6%88%98-%E7%AC%AC%E4%B8%80%E7%AB%A0-%E7%AE%80%E4%BB%8B/</guid>
       <description>线程的优势 发挥多处理器的强大能力 建模的简单性 异步事件的简化处理 响应更灵敏的用户界面 线程带来的风险 安全性问题 // 程序清单 1-1 @NotThreadSafe public class UnsafeSequence { private int value; public int getNext() { return value++; } } // 程序清单 1-2 @ThreadSafe public class SafeSequence { private int value; public synchronized int getNext() { return value++; } } 活跃性问题 单线程：死循环 多线程：饥饿、死锁、活锁 性能问题 </description>
     </item>
     
     <item>
       <title>Hello_world</title>
-      <link>https://zhangguoliu.github.io/post/hello_world/</link>
+      <link>https:zhagguoliu.github.io/post/hello_world/</link>
       <pubDate>Fri, 02 Jun 2023 16:32:36 +0800</pubDate>
       
-      <guid>https://zhangguoliu.github.io/post/hello_world/</guid>
+      <guid>https:zhagguoliu.github.io/post/hello_world/</guid>
       <description>Hello world.</description>
     </item>
     
     <item>
       <title>About</title>
-      <link>https://zhangguoliu.github.io/about/</link>
+      <link>https:zhagguoliu.github.io/about/</link>
       <pubDate>Fri, 02 Jun 2023 16:07:03 +0800</pubDate>
       
-      <guid>https://zhangguoliu.github.io/about/</guid>
+      <guid>https:zhagguoliu.github.io/about/</guid>
       <description>A freshman.
 中国科学技术大学-软件工程 读研中
 惟有王城最堪隐，万人如海一身藏</description>
