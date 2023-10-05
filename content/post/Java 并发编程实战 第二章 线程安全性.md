@@ -22,11 +22,40 @@ comments: false
 
 ### 无状态对象一定是线程安全的
 
-![程序清单 2-1](https://gitee.com/zhangguoliu/PicGo/raw/master/202310021917106.png)
+```java
+// 程序清单 2-1 一个无状态的 Servlet
+
+@ThreadSafe
+public class StatelessFactorizer implements Servlet {
+    public void service(ServletRequest req, ServletResponse resp) {
+        BigInteger i = extractFromRequest(req);
+        BigInteger[] factors = factor(i);
+        encodeIntoResponse(resp, factors);
+    }
+}
+```
 
 ## 原子性
 
-![程序清单 2-2](https://gitee.com/zhangguoliu/PicGo/raw/master/202310021924000.png)
+```java
+// 程序清单 2-2 在没有同步的情况下统计已处理请求数量的 Servlet（不要这么做）
+
+@NotThreadSafe
+public class UnsafeCountingFactorizer implements Servlet {
+    private long count = 0;
+
+    public long getCount() {
+        return count;
+    }
+
+    public void service(ServletRequest req, ServletResponse resp) {
+        BigInteger i = extractFromRequest(req);
+        BigInteger[] factors = factor(i);
+        ++count;
+        encodeIntoResponse(resp, factors);
+    }
+}
+```
 
 - 非原子操作：包含 **读取-修改-写入** 三个操作
 - 在并发编程中，这种由于**不恰当的执行时序**而出现不正确的结果是一种非常重要的情况，它有一个正式的名字：**竞态条件**（**Race Condition**）
@@ -34,8 +63,7 @@ comments: false
 ### 竞态条件
 
 - 当某个计算的**正确性**取决于**多个线程的交替执行时序**时，就会发生竞态条件
-- 现实情况中的竞态条件
-![星巴克案例](https://gitee.com/zhangguoliu/PicGo/raw/master/202310040045893.png)
+- 现实情况中的竞态条件：星巴克案例
 
 - 最常见的竞态条件类型：**先检查后执行（Check-Then-Act）**
   - 本质：通过一个**可能失效**的观测结果来决定下一步的动作
@@ -45,7 +73,20 @@ comments: false
 
 - **延迟初始化**中的竞态条件：类似单例模式中的**懒汉式**
 
-![程序清单 2-3](https://gitee.com/zhangguoliu/PicGo/raw/master/202310021944507.png)
+```java
+// 程序清单 2-3 延迟初始化中的竞态条件（不要这么做）
+
+@NotThreadSafe
+public class LazyInitRace {
+    private ExpensiveObject instance = null;
+
+    public ExpensiveObject getInstance() {
+        if (instance == null)
+            instance = new ExpensiveObject();
+        return instance;
+    }
+}
+```
 
 ### 复合操作
 
@@ -55,9 +96,27 @@ comments: false
 
 ### 原子变量类
 
-- 在 `java.util.concurrent.atomic` 包下
+- 在 java.util.concurrent.atomic 包下
 
-![程序清单 2-4](https://gitee.com/zhangguoliu/PicGo/raw/master/202310022001741.png)
+```java
+// 程序清单 2-4 使用 AtomicLong 类型的变量来统计已处理请求的数量
+
+@ThreadSafe
+public class CountingFactorizer implements Servlet {
+    private final AtomicLong count = new AtomicLong(0);
+
+    public long getCount() {
+        return count.get();
+    }
+
+    public void service(ServletRequest req, ServletResponse resp) {
+        BigInteger i = extractFromRequest(req);
+        BigInteger[] factors = factor(i);
+        count.incrementAndGet();
+        encodeIntoResponse(resp, factors);
+    }
+}
+```
 
 - count 是 final 修饰的
   - 需要在构造方法中进行初始化
@@ -67,7 +126,27 @@ comments: false
 
 ### 不变性条件
 
-![程序清单 2-5](https://gitee.com/zhangguoliu/PicGo/raw/master/202310022017142.png)
+```java
+// 程序清单 2-5 该 Servlet 在没有足够原子性保证的情况下对其最近计算结果进行缓存（不要这么做）
+
+@NotThreadSafe
+public class UnsafeCachingFactorizer implements Servlet {
+    private final AtomicReference<BigInteger> lastNumber = new AtomicReference<>();
+    private final AtomicReference<BigInteger[]> lastFactors = new AtomicReference<>();
+
+    public void service(ServletRequest req, ServletResponse resp) {
+        BigInteger i = extractFromRequest(req);
+        if (i.equals(lastNumber.get()))
+            encodeIntoResponse(resp, lastFactors.get());
+        else {
+            BigInteger[] factors = factor(i);
+            lastNumber.set(i);
+            lastFactors.set(factors);
+            encodeIntoResponse(resp, factors);
+        }
+    }
+}
+```
 
 - 当在不变性条件中涉及**多个**变量时，各个变量之间**并不是**彼此独立的，而是**某个变量的值会对其他变量的值产生约束**
 - 上例中的不变性条件是：在 lastFactors 中缓存的因数之积应该等于在 lastNumber 中缓存的数值
@@ -78,8 +157,27 @@ comments: false
 - **每个** Java 对象都可以用做一个实现同步的锁，称为**内置锁**或**监视器锁**
   - 静态方法则是 **Class 对象**
 
-![程序清单 2-6-1](https://gitee.com/zhangguoliu/PicGo/raw/master/202310022036282.png)
-![程序清单 2-6-2](https://gitee.com/zhangguoliu/PicGo/raw/master/202310022037253.png)
+```java
+// 程序清单 2-6 这个 Servlet 能正确地缓存最新的计算结果，但并发性却非常糟糕（不要这么做）
+
+@NotThreadSafe
+public class UnsafeCachingFactorizer implements Servlet {
+    private final AtomicReference<BigInteger> lastNumber = new AtomicReference<>();
+    private final AtomicReference<BigInteger[]> lastFactors = new AtomicReference<>();
+
+    public synchronized void service(ServletRequest req, ServletResponse resp) {
+        BigInteger i = extractFromRequest(req);
+        if (i.equals(lastNumber.get()))
+            encodeIntoResponse(resp, lastFactors.get());
+        else {
+            BigInteger[] factors = factor(i);
+            lastNumber.set(i);
+            lastFactors.set(factors);
+            encodeIntoResponse(resp, factors);
+        }
+    }
+}
+```
 
 ### 重入
 
@@ -87,17 +185,34 @@ comments: false
 - “重入” 意味着**获取锁的操作的粒度是“线程”**，而不是“调用”
 - 重入的一种实现方法：为**每个锁**关联一个**所有者线程**和一个**获取计数值**
 
-![程序清单 2-7](https://gitee.com/zhangguoliu/PicGo/raw/master/202310022046484.png)
+```java
+// 程序清单 2-7 如果内置锁不是可重入的，那么这段代码将发生死锁
 
-![程序清单 2-7 解释](https://gitee.com/zhangguoliu/PicGo/raw/master/202310051850084.png)
+public class Widget {
+    public synchronized void doSomething() {
+        ...
+    }
+}
+
+public class LoggingWidget extends Widget {
+    public synchronized void doSomething() {
+        System.out.println(toString() + ": calling doSomething");
+        super.doSomething();
+    }
+}
+```
 
 ### 用锁来保护状态
 
 - 如果用同步来协调对某个变量的访问，那么在访问这个变量的**所有**位置上都需要使用同步
 - 而且，当使用锁来协调对某个变量的访问时，在访问变量的**所有**位置上都要使用**同一个**锁
 - 对于每个包含**多个**变量的**不变性条件**，其中涉及的**所有**变量都需要由**同一个**锁来保护
+- 如果只是将每个方法都作为同步方法就行了吗？不行
 
-![只是将每个方法都作为同步方法就行了吗](https://gitee.com/zhangguoliu/PicGo/raw/master/202310051920469.png)
+```java
+if (!vector.contains(element))
+    vector.add(element);
+```
 
 ### 活跃性与性能
 
@@ -107,5 +222,46 @@ comments: false
   - 应该尽量将**不影响**共享状态且执行时间**较长**的操作从同步代码块中**分离**出去
 - 当执行时间较长的计算或者可能无法快速完成的操作时（例如，网络 I/O 或控制台 I/O），一定不要持有锁
 
-![程序清单 2-8-1](https://gitee.com/zhangguoliu/PicGo/raw/master/202310022114270.png)
-![程序清单 2-8-2](https://gitee.com/zhangguoliu/PicGo/raw/master/202310022114734.png)
+```java
+// 程序清单 2-8 缓存最近执行因数分解的数值及其计算结果的 Servlet
+
+@ThreadSafe
+public class CachedFactorizer implements Servlet {
+    @GuardedBy("this")
+    private BigInteger lastNumber;
+    @GuardedBy("this")
+    private BigInteger[] lastFactors;
+    @GuardedBy("this")
+    private long hits;
+    @GuardedBy("this")
+    private long cacheHits;
+
+    public synchronized long getHits() {
+        return hits;
+    }
+
+    public synchronized double getCacheHitRatio() {
+        return (double) cacheHits / (double) hits;
+    }
+
+    public void service(ServletRequest req, ServletResponse resp) {
+        BigInteger i = extractFromRequest(req);
+        BigInteger[] factors = null;
+        synchronized (this) {
+            ++hits;
+            if (i.equals(lastNumber) {
+                ++cacheHits;
+                factors = lastFactors.clone();
+            }
+        }
+        if (factors == null) {
+            factors = factor(i);
+            synchronized (this) {
+                lastNumber = i;
+                lastFactors = factors.clone();
+            }
+        }
+        encodeIntoResponse(resp, factors);
+    }
+}
+```
