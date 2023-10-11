@@ -6,7 +6,16 @@
     <description>Recent content on zgl&#39;s blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-CN</language>
-    <lastBuildDate>Thu, 05 Oct 2023 20:43:45 +0800</lastBuildDate><atom:link href="https://zhangguoliu.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Wed, 11 Oct 2023 21:11:25 +0800</lastBuildDate><atom:link href="https://zhangguoliu.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Java 并发编程实战 第三章 对象的共享 1</title>
+      <link>https://zhangguoliu.github.io/post/java-%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E5%AE%9E%E6%88%98-%E7%AC%AC%E4%B8%89%E7%AB%A0-%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%85%B1%E4%BA%AB-1/</link>
+      <pubDate>Wed, 11 Oct 2023 21:11:25 +0800</pubDate>
+      
+      <guid>https://zhangguoliu.github.io/post/java-%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E5%AE%9E%E6%88%98-%E7%AC%AC%E4%B8%89%E7%AB%A0-%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%85%B1%E4%BA%AB-1/</guid>
+      <description>同步的另一个重要方面：内存可见性（Memory Visibility） 3.1 可见性 无法确保的情况：执行读操作的线程能适时地看到其他线程写入的值 为了确保多个线程之间对内存写入操作的可见性，必须使用同步机制 // 程序清单 3-1 在没有同步的情况下共享变量（不要这么做） public class NoVisibility { private static boolean ready; private static int number; private static class ReaderThread extends Thread { @Override public void run() { while (!ready) Thread.yield(); System.out.println(number); } } public static void main(String[] args) { for (int i = 0; i &amp;lt; 100; i++) { new ReaderThread().start(); number = 42; ready = true; } } } 上例程序可能的执行结果： 输出 42 输出 0 死循环 原因：重排序 在没有同步的情况下，编译器、处理器以及运行时等都可能对操作的执行顺序进行一些意想不到的调整。在缺乏足够同步的多线程程序中，要想对内存操作的执行顺序进行判断，几乎无法得出正确的结论。</description>
+    </item>
+    
     <item>
       <title>Java 并发编程实战 第二章 线程安全性</title>
       <link>https://zhangguoliu.github.io/post/java-%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E5%AE%9E%E6%88%98-%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E6%80%A7/</link>
